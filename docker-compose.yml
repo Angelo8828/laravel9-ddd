@@ -1,0 +1,67 @@
+version: "3.7"
+services:
+  app:
+    build:
+      args:
+        user: angelo
+        uid: 1000
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
+    image: app-php
+    container_name: laravel9-ddd-app
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    networks:
+      - laravel9-ddd-network
+
+  db:
+    image: mysql:5.7
+    container_name: laravel9-ddd-db
+    ports: ["3326:3306"]
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - db-volume:/var/lib/mysql
+    networks:
+      - laravel9-ddd-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: laravel9-ddd-nginx
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - laravel9-ddd-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    networks:
+      - laravel9-ddd-network
+    container_name: laravel9-ddd-phpmyadmin
+    environment:
+      PMA_HOST: laravel9-ddd-db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 1G
+    depends_on:
+      - db
+    ports:
+      - 8000:80
+    volumes:
+      - /sessions
+
+volumes:
+  db-volume: {}
+
+networks:
+  laravel9-ddd-network:
+    driver: bridge
+    name: laravel9-ddd-network
